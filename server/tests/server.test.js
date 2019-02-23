@@ -10,7 +10,9 @@ const todos = [{
   text: "clean my cupboard"
 },{
   _id: new ObjectID(),
-  text: "wash my clothes"
+  text: "wash my clothes",
+  completed: true,
+  completedAt: 333
 }];
 
 beforeEach((done) => {
@@ -140,5 +142,58 @@ describe('DELETE /todos/:id', () => {
     .delete(`/todos/123`)
     .expect(404)
     .end(done);
+  });
+});
+
+describe('DELETE /todos/:id', () => {
+  it('Should update the todo', (done) =>{
+    var id = todos[0]._id.toHexString();
+    var temp = {
+      completed: true,
+      text: "my new task"
+    };
+    request(app)
+    .patch(`/todos/${id}`)
+    .send(temp)
+    .expect(200)
+    .expect((res) => {
+      expect(res.body.todo).toBeTruthy();
+      expect(res.body.todo.text).toBe(temp.text);
+    }).end((e, res) => {
+      if(e) {
+        return done(e);
+      }
+      Todo.findById(id).then((doc) => {
+        expect(doc).toBeTruthy();
+        expect(doc.completed).toBe(true);
+        expect(typeof doc.completedAt).toBe('number');
+        done();
+      }).catch((e) => done(e));
+    });
+  });
+
+  it('Should clear the completedAt when todo is not completed', (done) => {
+    var id = todos[1]._id.toHexString();
+    var temp = {
+      completed: false
+    };
+    request(app)
+    .patch(`/todos/${id}`)
+    .send(temp)
+    .expect(200)
+    .expect((res) => {
+      expect(res.body.todo).toBeTruthy();
+    }).end((e, res) => {
+      if(e) {
+        return done(e);
+      }
+
+      Todo.findById(id).then((doc) => {
+        expect(doc).toBeTruthy();
+        expect(doc.completedAt).toBe(null);
+        expect(doc.completed).toBe(false);
+        done();
+      }).catch(e => done(e));
+    });
   });
 });

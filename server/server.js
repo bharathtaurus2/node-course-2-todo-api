@@ -93,7 +93,7 @@ app.patch('/todos/:id', (req, res) => {
         if(!todo) {
           return res.status(404).send({error: "Could not update todo at id"});
         }
-        return res.send(todo);
+        return res.send({todo});
       });
     }).catch((e) => {
       if(e.status != undefined) {
