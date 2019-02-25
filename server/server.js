@@ -108,6 +108,37 @@ app.patch('/todos/:id', (req, res) => {
     });
 });
 
+app.post('/users/', (req, res) => {
+  var {name} = req.body;
+  var {email} = req.body;
+  var {password} = req.body;
+
+  var user = new User({
+    name,
+    email,
+    password
+  });
+  user.save().then(() => {
+    if(!user) {
+      throw {
+        status: 404,
+        message: 'Could not save doc'
+      }
+    }
+    return user.generateAuthToken(user);
+  })
+  .then((token) => {
+    res.header('x-auth', token).send({user});
+  }).catch((e) => {
+    if(e.status) {
+      res.status(e.status);
+    } else {
+      res.status(400);
+    }
+    res.send({e});
+  });
+});
+
 app.listen(port, () => {
   console.log(`Started on port ${port}`);
 });
