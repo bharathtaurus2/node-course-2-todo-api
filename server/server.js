@@ -121,22 +121,26 @@ app.post('/users/', (req, res) => {
   });
   user.save().then(() => {
     if(!user) {
-      throw {
+      console.log(user);
+      
+      return Promise.reject({
         status: 404,
         message: 'Could not save doc'
-      }
+      });
     }
     return user.generateAuthToken(user);
   })
   .then((token) => {
     res.header('x-auth', token).send({user});
   }).catch((e) => {
+    console.log(e);
+    
     if(e.status) {
       res.status(e.status);
     } else {
       res.status(400);
     }
-    res.send({e});
+    res.send({error: e.toString()});
   });
 });
 
