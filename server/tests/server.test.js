@@ -273,3 +273,41 @@ describe('POST /users', () => {
     });
   });
 });
+
+describe('POST /users/login', () => {
+  it('Should login user and return auth token', (done) => {
+    request(app)
+    .post('/users/login')
+    .send(users[1])
+    .expect(200)
+    .expect((res) => {
+      expect(res.headers['x-auth']).toBeTruthy();
+      expect(res.body.email).toBeTruthy();
+    }).end((err, res) => {
+      if(err) {
+        return done(err);
+      }
+      User.findById(res.body._id).then(doc => {
+        expect(doc.tokens[0]).toMatchObject({
+          access: 'auth',
+          token: res.headers['x-auth']
+        });
+        done();
+      }).catch(e => done(e));
+    });
+  });
+
+  it('Should reject invalid login', (done) => {
+    var user1 = {
+      email: users[0].email,
+      password: 'asdf'
+    }
+    request(app)
+    .post('/users/login')
+    .send(user1)
+    .expect(400)
+    .expect((res) => {
+      expect(res.body.email).not.toBeTruthy();
+    }).end(done);
+  });
+});
