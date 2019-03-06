@@ -166,7 +166,7 @@ app.delete('/users/me/token', authenticate, (req, res) => {
     if(!doc) {
       return Promise.reject({status:404});
     }
-    res.send(200).send();
+    res.status(200).send();
   }).catch(e => {
     if(e.status) {
       res.status(e.status);

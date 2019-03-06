@@ -33,7 +33,7 @@ describe('POST /todos', () => {
         expect(todos[0].text).toBe(text);
         done();
       }).catch(e => {
-        console.log(e);
+        // console.log(e);
         done(e);
       });
     });
@@ -88,7 +88,7 @@ describe('GET /todos/:id', () => {
 
   it('Should return 404 if todos is not found', (done) => {
     var hexId = new ObjectID().toHexString();
-    console.log(`hexId: ${hexId}`);
+    // console.log(`hexId: ${hexId}`);
     request(app)
     .get(`/todos/${hexId}`)
     .expect(404)
@@ -99,7 +99,7 @@ describe('GET /todos/:id', () => {
 describe('DELETE /todos/:id', () => {
   it('Should delete a todo', (done) => {
     var hexId = todos[0]._id.toHexString();
-    console.log(`Hex ID: ${hexId}`);
+    // console.log(`Hex ID: ${hexId}`);
     request(app)
     .delete(`/todos/${hexId}`)
     .expect(200)
@@ -309,5 +309,26 @@ describe('POST /users/login', () => {
     .expect((res) => {
       expect(res.body.email).not.toBeTruthy();
     }).end(done);
+  });
+});
+
+describe('DELETE /users/me/token', () => {
+  it('Should delete a token', (done) => {
+    request(app)
+    .delete('/users/me/token')
+    .set('x-auth', users[0].tokens[0].token)
+    .expect(200)
+    .expect(res => {
+      expect(res.header['x-auth']).not.toBeTruthy();
+    }).end((e, r) => {
+      if(e) {
+        done(e);
+      }
+      User.findById(users[0]._id).then(doc =>{
+        expect(doc).toBeTruthy();
+        expect(doc.tokens.length).toBe(0);
+        done();
+      }).catch(e => done(e));
+    })
   });
 });
