@@ -18,8 +18,11 @@ const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
-app.post('/todos', (req, res) => {
-  var todo = new Todo({text: req.body.text});
+app.post('/todos', authenticate, (req, res) => {
+  var todo = new Todo({
+    text: req.body.text,
+    _creator: req.user._id
+  });
   todo.save().then((doc) => {
     return res.send(doc);
   }, (e) => {
@@ -27,21 +30,26 @@ app.post('/todos', (req, res) => {
   });
 });
 
-app.get('/todos', (req, res) => {
-  Todo.find().then((todos) => {
+app.get('/todos', authenticate, (req, res) => {
+  Todo.find({
+    _creator: req.user._id
+  }).then((todos) => {
     return res.send({todos});
   }, (e) => {
     res.status(400).send(e);
   });
 });
 
-app.get('/todos/:id', (req, res) => {
+app.get('/todos/:id', authenticate, (req, res) => {
   var id = req.params.id;
   if(!ObjectID.isValid(id)) {
     return res.status(404).send({error: "Request contains invalid id!"});
   }
 
-  Todo.findById(id).then((todo) => {
+  Todo.findOne({
+    _id: id,
+    _creator: req.user._id
+  }).then((todo) => {
     if(!todo) {
       return res.status(404).send({error: "Requested id not found!"});
     }
@@ -51,13 +59,13 @@ app.get('/todos/:id', (req, res) => {
   });
 });
 
-app.delete('/todos/:id', (req, res) => {
+app.delete('/todos/:id', authenticate, (req, res) => {
   var id = req.params.id;
   if (!ObjectID.isValid(id)) {
     return res.status(404).send({error: "Request contains invalid id!"});
   }
 
-  Todo.findByIdAndDelete(id).then((todo) => {
+  Todo.findByIdAndDelete({_id: id, _creator: req.user._id}).then((todo) => {
     if(!todo) {
       return res.status(404).send({error: "Could not delete id!"});
     }
@@ -67,13 +75,16 @@ app.delete('/todos/:id', (req, res) => {
   });
 });
 
-app.patch('/todos/:id', (req, res) => {
+app.patch('/todos/:id', authenticate, (req, res) => {
   var id = req.params.id;
   if(!ObjectID.isValid(id)) {
     return res.status(404).send({error: "Request contains invalid id!"});
   }
   var body = _.pick(req.body,['text', 'completed']);
-    Todo.findById(id).then((temp)=> {
+    Todo.findOne({
+      _id: id,
+      _creator: req.user._id
+    }).then((temp)=> {
       if (!temp) {
         throw {
           status: 404,
@@ -94,7 +105,10 @@ app.patch('/todos/:id', (req, res) => {
       return temp;
     }).then(() => {
       mongoose.set('useFindAndModify', false);
-      Todo.findOneAndUpdate({_id: id}, {$set: body}, {new: true}).then((todo) => {
+      Todo.findOneAndUpdate({
+        _id: id,
+        _creator: req.user._id
+      }, {$set: body}, {new: true}).then((todo) => {
         if(!todo) {
           return res.status(404).send({error: "Could not update todo at id"});
         }
@@ -162,7 +176,7 @@ app.post('/users/login', (req, res) => {
 });
 
 app.delete('/users/me/token', authenticate, (req, res) => {
-  req.user.removeToken(req.tokens).then(doc => {
+  req.user.removeToken(req.tokens[0].token).then(doc => {
     if(!doc) {
       return Promise.reject({status:404});
     }
